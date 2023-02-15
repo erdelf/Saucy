@@ -14,10 +14,13 @@ using System.Linq;
 using System.Numerics;
 using TriadBuddyPlugin;
 
+
 namespace Saucy
 {
     using System.Globalization;
-    using ImGuiScene;
+    using NPOI.SS.UserModel;
+    using NPOI.XSSF.Model;
+    using NPOI.XSSF.UserModel;
 
     // It is good to have this be disposable in general, in case you ever need it
     // to do any cleanup
@@ -273,6 +276,42 @@ namespace Saucy
                     }
 
                     ImGui.EndTable();
+                }
+
+                if (ImGui.Button("Export to .csv"))
+                {
+                    IWorkbook  wb        = new XSSFWorkbook();
+                    
+                    ISheet    sheet     = wb.CreateSheet("Recorded Matches");
+                    IRow      headerRow = sheet.CreateRow(0);
+                    
+                    headerRow.CreateCell(0).SetCellValue("Date");
+                    headerRow.CreateCell(1).SetCellValue("NPC");
+                    headerRow.CreateCell(2).SetCellValue("Result");
+                    headerRow.CreateCell(3).SetCellValue("MGP");
+                    headerRow.CreateCell(4).SetCellValue("CardWon");
+                    headerRow.CreateCell(5).SetCellValue("Time");
+                    headerRow.CreateCell(6).SetCellValue("Deck");
+                    headerRow.CreateCell(7).SetCellValue("DeckCards");
+
+                    for (int i = 0; i < stat.recordedMatches.Count; i++)
+                    {
+                        IRow             row         = sheet.CreateRow(i + 1);
+                        TriadMatchRecord matchRecord = stat.recordedMatches[i];
+                        row.CreateCell(0).SetCellValue(matchRecord.date.ToString(CultureInfo.CurrentCulture));
+                        row.CreateCell(1).SetCellValue(matchRecord.npc);
+                        row.CreateCell(2).SetCellValue(matchRecord.result.ToString());
+                        row.CreateCell(3, CellType.Numeric).SetCellValue(matchRecord.mgp);
+                        row.CreateCell(4).SetCellValue(matchRecord.GetWonCard()?.Name.GetLocalized() ?? string.Empty);
+                        row.CreateCell(5, CellType.Numeric).SetCellValue(matchRecord.time);
+                        row.CreateCell(6, CellType.Numeric).SetCellValue((matchRecord.deck + 1));
+                        row.CreateCell(7).SetCellValue(string.Join(" | ", matchRecord.GetResolvedDeckCards().Select(tc => tc.Name.GetLocalized())));
+                    }
+
+                    sheet.ForceFormulaRecalculation = true;
+                    FileStream fs = File.Create(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Saucy.xlsx"));
+                    wb.Write(fs, false);
+                    fs.Close();
                 }
             }
 
