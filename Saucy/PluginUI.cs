@@ -16,6 +16,9 @@ using TriadBuddyPlugin;
 
 namespace Saucy
 {
+    using System.Globalization;
+    using ImGuiScene;
+
     // It is good to have this be disposable in general, in case you ever need it
     // to do any cleanup
     public class PluginUI : IDisposable
@@ -230,8 +233,49 @@ namespace Saucy
                 ImGui.NextColumn();
                 ImGuiEx.CenterColumnText($"{stat.CardsWon.OrderByDescending(x => x.Value).First().Value.ToString("N0")} times");
             }
-
             ImGui.Columns(1);
+
+            if (ImGui.CollapsingHeader("Recorded Matches"))
+            {
+
+                if (ImGui.BeginTable("RecordedMatches", 8, ImGuiTableFlags.ScrollY | ImGuiTableFlags.Borders | ImGuiTableFlags.Reorderable | ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.Hideable))
+                {
+                    ImGui.TableSetupColumn("Date",      ImGuiTableColumnFlags.WidthFixed, 120);
+                    ImGui.TableSetupColumn("NPC",       ImGuiTableColumnFlags.WidthStretch, 1.4f);
+                    ImGui.TableSetupColumn("Result",    ImGuiTableColumnFlags.WidthStretch);
+                    ImGui.TableSetupColumn("MGP",       ImGuiTableColumnFlags.WidthStretch);
+                    ImGui.TableSetupColumn("CardWon",   ImGuiTableColumnFlags.WidthStretch, 1.3f);
+                    ImGui.TableSetupColumn("Time",      ImGuiTableColumnFlags.WidthFixed, 35f);
+                    ImGui.TableSetupColumn("Deck",      ImGuiTableColumnFlags.WidthFixed, 25f);
+                    ImGui.TableSetupColumn("DeckCards", ImGuiTableColumnFlags.WidthStretch);
+                    ImGui.TableSetupScrollFreeze(0, 1);
+                    ImGui.TableHeadersRow();
+
+                    for (int i = stat.recordedMatches.Count - 1; i >= 0; i--)
+                    {
+                        TriadMatchRecord matchRecord = stat.recordedMatches[i];
+                        ImGui.TableNextColumn();
+                        ImGui.Text(matchRecord.date.ToString(CultureInfo.CurrentCulture));
+                        ImGui.TableNextColumn();
+                        ImGui.Text(matchRecord.npc);
+                        ImGui.TableNextColumn();
+                        ImGui.Text(matchRecord.result.ToString());
+                        ImGui.TableNextColumn();
+                        ImGui.Text(matchRecord.mgp.ToString());
+                        ImGui.TableNextColumn();
+                        ImGui.Text(matchRecord.GetWonCard()?.Name.GetLocalized() ?? string.Empty);
+                        ImGui.TableNextColumn();
+                        ImGui.Text(matchRecord.time.ToString("F2") + "s");
+                        ImGui.TableNextColumn();
+                        ImGui.Text((matchRecord.deck + 1).ToString());
+                        ImGui.TableNextColumn();
+                        ImGui.Text(string.Join(" | ", matchRecord.GetResolvedDeckCards().Select(tc => tc.Name.GetLocalized())));
+                    }
+
+                    ImGui.EndTable();
+                }
+            }
+
             ImGui.EndChild();
             ImGui.PushItemWidth(ImGui.GetContentRegionAvail().X);
             reset = ImGui.Button("RESET STATS (Hold Ctrl)", new Vector2(ImGui.GetContentRegionAvail().X, ImGui.GetContentRegionAvail().Y)) && ImGui.GetIO().KeyCtrl;

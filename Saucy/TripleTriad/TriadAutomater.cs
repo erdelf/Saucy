@@ -17,6 +17,8 @@ using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace Saucy.TripleTriad
 {
+    using System.Runtime.CompilerServices;
+
     internal static unsafe class TriadAutomater
     {
 
@@ -30,6 +32,9 @@ namespace Saucy.TripleTriad
         public static int NumberOfTimes = 1;
         public static bool LogOutAfterCompletion = false;
         public static bool PlayUntilAllCardsDropOnce = false;
+
+        public static int      lastPlayedDeck;
+        public static DateTime lastMatchStart;
 
         public static int PlaceCardDetour(IntPtr a1)
         {
@@ -154,7 +159,7 @@ namespace Saucy.TripleTriad
             {
                 if (TryGetAddonByName<AtkUnitBase>("TripleTriadSelDeck", out var addon) && addon->IsVisible && !TryGetAddonByName<AtkUnitBase>("TripleTriad", out var _))
                 {
-
+                    lastMatchStart = DateTime.Now;
                     if (Service.Configuration.SelectedDeckIndex == -1)
                     {
                         var button = (AtkComponentButton*)addon->UldManager.NodeList[3];
@@ -163,7 +168,7 @@ namespace Saucy.TripleTriad
                     }
                     else
                     {
-                        var deck = Service.Configuration.UseRecommendedDeck ? Saucy.TTSolver.preGameBestId : Service.Configuration.SelectedDeckIndex;
+                        var deck = lastPlayedDeck = Service.Configuration.UseRecommendedDeck ? Saucy.TTSolver.preGameBestId : Service.Configuration.SelectedDeckIndex;
                         var values = stackalloc AtkValue[1];
                         //Deck Index
                         values[0] = new()
@@ -196,6 +201,7 @@ namespace Saucy.TripleTriad
                 {
                     var button = (AtkComponentButton*)addon->UldManager.NodeList[4];
                     ClickButton(addon, button, 1);
+                    lastMatchStart = DateTime.Now;
                 }
             }
             catch { }

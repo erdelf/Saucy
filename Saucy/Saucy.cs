@@ -121,6 +121,8 @@ namespace Saucy
                 if (TriadAutomater.PlayXTimes)
                     TriadAutomater.NumberOfTimes--;
 
+                int cardId = -1;
+
                 if (obj.isWin)
                 {
                     Service.Configuration.UpdateStats(stats => stats.GamesWonWithSaucy++);
@@ -137,6 +139,7 @@ namespace Saucy
                         {
                             if (cardInfo.ItemId == obj.cardItemId)
                             {
+                                cardId = cardInfo.CardId;
                                 Service.Configuration.UpdateStats(stats =>
                                                                   {
                                                                       if (stats.CardsWon.ContainsKey((uint)cardInfo.CardId))
@@ -152,11 +155,29 @@ namespace Saucy
                     }
                 }
 
+                TriadMatchRecord matchRecord = new()
+                                               {
+                                                   date = TriadAutomater.lastMatchStart,
+                                                   result = obj.isWin  ? GameEndState.Won :
+                                                            obj.isDraw ? GameEndState.Draw :
+                                                                         GameEndState.Lost,
+                                                   card = cardId,
+                                                   mgp = this.GetBonusMGP(obj.numMGP),
+                                                   npc = TTSolver.lastGameNpc.Name.GetLocalized(),
+                                                   deck = TriadAutomater.lastPlayedDeck,
+                                                   deckCards = TTSolver.preGameDecks[TriadAutomater.lastPlayedDeck].solverDeck.knownCards.Select(tc => tc.Id).ToArray(),
+                                                   time = DateTime.Now.Subtract(TriadAutomater.lastMatchStart).TotalSeconds
+                                               };
+
+                Service.Configuration.UpdateStats(stats =>
+                                                  {
+                                                      stats.recordedMatches.Add(matchRecord);
+                                                  });
+
                 this.Rematch();
             }
+
             Service.Configuration.Save();
-
-
         }
 
         private int GetBonusMGP(int numMGP)
